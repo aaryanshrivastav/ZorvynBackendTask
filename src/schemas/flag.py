@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from src.core.constants import FlagStatus
+
 
 class FlagCreate(BaseModel):
     transaction_id: int
@@ -9,7 +11,7 @@ class FlagCreate(BaseModel):
 
 
 class FlagReview(BaseModel):
-    status: str
+    status: FlagStatus
 
 
 class FlagResponse(BaseModel):
@@ -17,6 +19,6 @@ class FlagResponse(BaseModel):
     transaction_id: int
     created_by_user_id: int
     reason: str
-    status: str
+    status: FlagStatus
     reviewed_by_user_id: int | None
     created_at: datetime

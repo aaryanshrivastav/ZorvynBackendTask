@@ -1,6 +1,9 @@
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
+
+from src.core.constants import RequestStatus, RequestType
 
 
 class ChangeRequestCreateUpdate(BaseModel):
@@ -15,21 +18,15 @@ class ChangeRequestCreateDelete(BaseModel):
 
 
 class ChangeRequestDecision(BaseModel):
-    decision: str
+    decision: Literal["APPROVE", "REJECT"]
     comment: str | None = None
-
-    @model_validator(mode="after")
-    def validate_decision(self):
-        if self.decision not in {"APPROVE", "REJECT"}:
-            raise ValueError("decision must be APPROVE or REJECT")
-        return self
 
 
 class ChangeRequestResponse(BaseModel):
     id: int
     transaction_id: int
-    request_type: str
-    status: str
+    request_type: RequestType
+    status: RequestStatus
     reason: str
     proposed_changes: dict | None
     requester_user_id: int

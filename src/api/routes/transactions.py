@@ -5,35 +5,34 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from src.auth.dependencies import get_current_user, require_roles
-from src.core.constants import RoleName
+from src.core.constants import RoleName, TransactionType
 from src.db.session import get_db
-from src.schemas.transaction import TransactionCreate, TransactionResponse, TransactionsListResponse
+from src.schemas.common import APIMessage
+from src.schemas.transaction import (
+    TransactionCreate,
+    TransactionResponse,
+    TransactionsListResponse,
+    TransactionUpdate,
+    transaction_to_response,
+    transactions_list_to_response,
+)
 from src.services.transaction_service import TransactionService
 
 router = APIRouter()
 
 
-@router.post("", response_model=TransactionResponse)
+@router.post("", response_model=TransactionResponse, status_code=201)
 def create_transaction(
     payload: TransactionCreate,
     db: Session = Depends(get_db),
     current_user=Depends(require_roles(RoleName.ANALYST, RoleName.ADMIN)),
 ):
-    tx = TransactionService(db).create_transaction(payload.model_dump(), current_user.id)
-    return {
-        "id": tx.id,
-        "transaction_id": tx.transaction_id,
-        "occurred_at": tx.occurred_at,
-        "account_number": tx.account_number,
-        "transaction_type": tx.transaction_type,
-        "amount": tx.amount,
-        "currency": tx.currency,
-        "counterparty": tx.counterparty,
-        "category": tx.category,
-        "payment_method": tx.payment_method,
-        "owner_user_id": tx.owner_user_id,
-        "is_deleted": tx.is_deleted,
-    }
+    payload_dict = payload.model_dump()
+    if current_user.role.name == RoleName.ANALYST.value:
+        payload_dict["owner_user_id"] = current_user.id
+
+    tx = TransactionService(db).create_transaction(payload_dict, current_user.id)
+    return transaction_to_response(tx)
 
 
 @router.get("", response_model=TransactionsListResponse)
@@ -43,7 +42,7 @@ def list_transactions(
     owner_user_id: int | None = None,
     account_number: str | None = None,
     category: str | None = None,
-    transaction_type: str | None = None,
+    transaction_type: TransactionType | None = None,
     payment_method: str | None = None,
     min_amount: Decimal | None = None,
     max_amount: Decimal | None = None,
@@ -76,42 +75,35 @@ def list_transactions(
         },
         current_user,
     )
-    return {
-        "items": [
-            {
-                "id": tx.id,
-                "transaction_id": tx.transaction_id,
-                "occurred_at": tx.occurred_at,
-                "account_number": tx.account_number,
-                "transaction_type": tx.transaction_type,
-                "amount": tx.amount,
-                "currency": tx.currency,
-                "counterparty": tx.counterparty,
-                "category": tx.category,
-                "payment_method": tx.payment_method,
-                "owner_user_id": tx.owner_user_id,
-                "is_deleted": tx.is_deleted,
-            }
-            for tx in items
-        ],
-        "total": total,
-    }
+    return transactions_list_to_response(items, total)
 
 
 @router.get("/{transaction_id}", response_model=TransactionResponse)
 def get_transaction(transaction_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     tx = TransactionService(db).get_transaction(transaction_id, current_user)
-    return {
-        "id": tx.id,
-        "transaction_id": tx.transaction_id,
-        "occurred_at": tx.occurred_at,
-        "account_number": tx.account_number,
-        "transaction_type": tx.transaction_type,
-        "amount": tx.amount,
-        "currency": tx.currency,
-        "counterparty": tx.counterparty,
-        "category": tx.category,
-        "payment_method": tx.payment_method,
-        "owner_user_id": tx.owner_user_id,
-        "is_deleted": tx.is_deleted,
-    }
+    return transaction_to_response(tx)
+
+
+@router.put("/{transaction_id}", response_model=TransactionResponse)
+def update_transaction(
+    transaction_id: int,
+    payload: TransactionUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_roles(RoleName.ADMIN)),
+):
+    tx = TransactionService(db).update_transaction(
+        transaction_id=transaction_id,
+        payload=payload.model_dump(exclude_unset=True),
+        actor_user_id=current_user.id,
+    )
+    return transaction_to_response(tx)
+
+
+@router.delete("/{transaction_id}", response_model=APIMessage)
+def delete_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_roles(RoleName.ADMIN)),
+):
+    TransactionService(db).delete_transaction(transaction_id=transaction_id, actor_user_id=current_user.id)
+    return {"message": "Transaction soft-deleted"}

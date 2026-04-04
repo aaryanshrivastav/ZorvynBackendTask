@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from src.auth.dependencies import get_current_user
 from src.db.session import get_db
+from src.schemas.common import APIMessage
 from src.schemas.auth import LoginRequest, LogoutRequest, MeResponse, RefreshRequest, TokenPair
 from src.services.auth_service import AuthService
 
@@ -19,7 +20,7 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     return AuthService(db).refresh(payload.refresh_token)
 
 
-@router.post("/logout")
+@router.post("/logout", response_model=APIMessage)
 def logout(payload: LogoutRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     AuthService(db).logout(payload.refresh_token, current_user.id)
     return {"message": "Logged out"}

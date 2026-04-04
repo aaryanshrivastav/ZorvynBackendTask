@@ -31,7 +31,7 @@ def _to_response(req):
     }
 
 
-@router.post("/update", response_model=ChangeRequestResponse)
+@router.post("/update", response_model=ChangeRequestResponse, status_code=201)
 def create_update_request(
     payload: ChangeRequestCreateUpdate,
     db: Session = Depends(get_db),
@@ -46,7 +46,7 @@ def create_update_request(
     return _to_response(req)
 
 
-@router.post("/delete", response_model=ChangeRequestResponse)
+@router.post("/delete", response_model=ChangeRequestResponse, status_code=201)
 def create_delete_request(
     payload: ChangeRequestCreateDelete,
     db: Session = Depends(get_db),
@@ -70,7 +70,7 @@ def list_pending(db: Session = Depends(get_db), current_user=Depends(require_rol
 
 @router.get("/{request_id}", response_model=ChangeRequestResponse)
 def get_request(request_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    req = ChangeRequestService(db).get_request(request_id)
+    req = ChangeRequestService(db).get_request_for_user(request_id, current_user)
     return _to_response(req)
 
 

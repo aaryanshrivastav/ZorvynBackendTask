@@ -4,6 +4,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 
 from src.core.config import settings
+from src.core.passwords import verify_password
 from src.core.exceptions import unauthorized
 from src.core.security import TokenPayloadError, create_access_token, create_refresh_token, decode_token
 from src.models.refresh_token_session import RefreshTokenSession
@@ -20,7 +21,7 @@ class AuthService:
 
     def login(self, username: str, password: str):
         user = self.user_repo.get_by_username(username)
-        if not user or user.password != password or user.status != "ACTIVE":
+        if not user or not verify_password(password, user.password) or user.status != "ACTIVE":
             log_audit_event(self.db, None, "AUTH_LOGIN", "auth", username, "FAILED")
             self.db.commit()
             raise unauthorized("Invalid username or password")
@@ -54,6 +55,12 @@ class AuthService:
 
         if not token_id or not self.refresh_repo.is_valid(token_id, now):
             raise unauthorized("Refresh token revoked or expired")
+
+        user = self.user_repo.get_by_id(user_id)
+        if not user or user.status != "ACTIVE":
+            self.refresh_repo.revoke(token_id)
+            self.db.commit()
+            raise unauthorized("User is inactive or missing")
 
         self.refresh_repo.revoke(token_id)
 

@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from sqlalchemy import or_, select
 
@@ -43,6 +44,7 @@ class TransactionService:
         stmt = build_transaction_query(filters, query_params.get("sort_by", "occurred_at"), query_params.get("sort_order", "desc"))
 
         if current_user.role.name == "Viewer":
+            # Viewer visibility is scope-constrained and handled at query time.
             stmt = apply_viewer_scope(stmt, current_user.id)
         elif current_user.role.name == "Analyst":
             stmt = stmt.where(Transaction.owner_user_id == current_user.id)
@@ -57,6 +59,7 @@ class TransactionService:
             if current_user.role.name == "Analyst" and transaction.owner_user_id != current_user.id:
                 raise forbidden("Analyst cannot access this transaction")
             if current_user.role.name == "Viewer":
+                # Viewer can access only transactions explicitly granted by USER or ACCOUNT scope.
                 allowed = self.db.execute(
                     select(ViewerAccessScope.id).where(
                         ViewerAccessScope.viewer_user_id == current_user.id,
@@ -74,6 +77,39 @@ class TransactionService:
 
     def soft_delete(self, transaction_id: int, actor_user_id: int):
         tx = self.get_transaction(transaction_id, current_user=None)
+        if tx.is_deleted:
+            return tx
         tx.is_deleted = True
+        tx.deleted_at = datetime.utcnow()
         tx.deleted_by_user_id = actor_user_id
         log_audit_event(self.db, actor_user_id, "TRANSACTION_SOFT_DELETE", "transaction", str(transaction_id), "SUCCESS")
+        self.db.commit()
+        self.db.refresh(tx)
+        return tx
+
+    def update_transaction(self, transaction_id: int, payload: dict, actor_user_id: int):
+        tx = self.get_transaction(transaction_id, current_user=None)
+        allowed_fields = {
+            "occurred_at",
+            "account_number",
+            "transaction_type",
+            "amount",
+            "currency",
+            "counterparty",
+            "category",
+            "notes",
+            "payment_method",
+            "owner_user_id",
+        }
+
+        for field, value in payload.items():
+            if field in allowed_fields and value is not None:
+                setattr(tx, field, value)
+
+        log_audit_event(self.db, actor_user_id, "TRANSACTION_UPDATE", "transaction", str(transaction_id), "SUCCESS")
+        self.db.commit()
+        self.db.refresh(tx)
+        return tx
+
+    def delete_transaction(self, transaction_id: int, actor_user_id: int):
+        return self.soft_delete(transaction_id, actor_user_id)

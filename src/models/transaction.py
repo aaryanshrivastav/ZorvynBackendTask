@@ -18,6 +18,7 @@ class Transaction(TimestampMixin, Base):
     currency: Mapped[str] = mapped_column(String(10), nullable=False)
     counterparty: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     category: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
     payment_method: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     owner_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)

@@ -29,4 +29,28 @@ def test_admin_only_user_creation(client, analyst_token, admin_token):
         json={"username": "newviewer", "password": "pass123", "role": "Viewer"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
-    assert allowed.status_code == 200
+    assert allowed.status_code == 201
+
+
+def test_refresh_rejected_for_inactive_user(client, admin_token):
+    login = client.post("/auth/login", json={"username": "analyst", "password": "analyst123"})
+    assert login.status_code == 200
+
+    deactivate = client.patch(
+        "/admin/users/2/status",
+        json={"status": "INACTIVE"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert deactivate.status_code == 200
+
+    refresh = client.post("/auth/refresh", json={"refresh_token": login.json()["refresh_token"]})
+    assert refresh.status_code == 401
+
+
+def test_duplicate_username_update_is_rejected(client, admin_token):
+    dup = client.patch(
+        "/admin/users/4",
+        json={"username": "admin"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert dup.status_code == 400

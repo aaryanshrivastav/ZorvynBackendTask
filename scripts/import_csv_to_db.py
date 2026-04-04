@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from src.db.init_db import create_tables, seed_roles
 from src.db.session import SessionLocal
+from src.core.passwords import hash_password
 from src.models.transaction import Transaction
 from src.models.transaction_risk_profile import TransactionRiskProfile
 from src.models.user import User
@@ -49,7 +50,7 @@ def get_or_create_dataset_user(db: Session, dataset_user_id: str, analyst_role_i
     if user:
         return user.id
 
-    user = User(username=username, password="changeme", role_id=analyst_role_id, status="ACTIVE")
+    user = User(username=username, password=hash_password("changeme"), role_id=analyst_role_id, status="ACTIVE")
     db.add(user)
     db.flush()
     return user.id
@@ -84,6 +85,7 @@ def import_csv_to_db(csv_path: Path) -> None:
                     "currency": none_to_null(row.get("Currency")) or "USD",
                     "counterparty": none_to_null(row.get("Counterparty")) or "UNKNOWN",
                     "category": none_to_null(row.get("Category")) or "Uncategorized",
+                    "notes": none_to_null(row.get("Description")) or none_to_null(row.get("Notes")),
                     "payment_method": none_to_null(row.get("Payment_Method")) or "UNKNOWN",
                     "owner_user_id": owner_user_id,
                 }

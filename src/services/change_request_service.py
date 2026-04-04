@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from src.core.constants import RequestStatus, RequestType
-from src.core.exceptions import conflict, not_found
+from src.core.exceptions import conflict, forbidden, not_found
 from src.models.record_change_request import RecordChangeRequest
 from src.repositories.change_request_repository import ChangeRequestRepository
 from src.repositories.transaction_repository import TransactionRepository
@@ -20,6 +20,17 @@ class ChangeRequestService:
         tx = self.transaction_repo.get_by_id(transaction_id)
         if not tx or tx.is_deleted:
             raise not_found("Transaction not found")
+
+        allowed_update_fields = {"category", "counterparty", "payment_method", "notes"}
+        unknown_fields = set(proposed_changes.keys()) - allowed_update_fields
+        if unknown_fields:
+            invalid_fields = ", ".join(sorted(unknown_fields))
+            raise conflict(f"Unsupported change-request fields: {invalid_fields}")
+
+        missing_model_fields = [field for field in proposed_changes if not hasattr(tx, field)]
+        if missing_model_fields:
+            invalid_fields = ", ".join(sorted(missing_model_fields))
+            raise conflict(f"Requested fields are not mutable on transactions: {invalid_fields}")
 
         req = RecordChangeRequest(
             transaction_id=transaction_id,
@@ -69,6 +80,20 @@ class ChangeRequestService:
             raise not_found("Change request not found")
         return req
 
+    def get_request_for_user(self, request_id: int, current_user):
+        req = self.get_request(request_id)
+
+        if current_user.role.name == "Admin":
+            return req
+        if current_user.role.name == "Analyst" and req.requester_user_id == current_user.id:
+            return req
+        if current_user.role.name == "Approver" and (
+            req.status == RequestStatus.PENDING.value or req.reviewer_user_id == current_user.id
+        ):
+            return req
+
+        raise forbidden("You are not allowed to view this change request")
+
     def decide_request(self, request_id: int, approver_user_id: int, decision: str):
         req = self.get_request(request_id)
         if req.status != RequestStatus.PENDING.value:
@@ -82,6 +107,7 @@ class ChangeRequestService:
 
         if decision == "APPROVE":
             req.status = RequestStatus.APPROVED.value
+            # Only whitelisted update fields can be persisted from proposed_changes.
             if req.request_type == RequestType.UPDATE.value and req.proposed_changes:
                 for key, value in req.proposed_changes.items():
                     if hasattr(tx, key):

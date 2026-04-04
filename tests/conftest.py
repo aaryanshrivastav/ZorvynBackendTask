@@ -4,7 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
+from src.core.passwords import hash_password
 from src.db.base import Base
 from src.db.session import get_db
 from src.main import app
@@ -12,8 +14,12 @@ from src.models import *  # noqa: F401,F403
 from src.models.role import Role
 from src.models.user import User
 
-TEST_DB_URL = "sqlite:///./test_finance.db"
-engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
+TEST_DB_URL = "sqlite+pysqlite:///:memory:"
+engine = create_engine(
+    TEST_DB_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -40,10 +46,10 @@ def setup_db():
 
     role_map = {r.name: r.id for r in db.query(Role).all()}
     users = [
-        User(username="admin", password="admin123", role_id=role_map["Admin"], status="ACTIVE"),
-        User(username="analyst", password="analyst123", role_id=role_map["Analyst"], status="ACTIVE"),
-        User(username="approver", password="approver123", role_id=role_map["Approver"], status="ACTIVE"),
-        User(username="viewer", password="viewer123", role_id=role_map["Viewer"], status="ACTIVE"),
+        User(username="admin", password=hash_password("admin123"), role_id=role_map["Admin"], status="ACTIVE"),
+        User(username="analyst", password=hash_password("analyst123"), role_id=role_map["Analyst"], status="ACTIVE"),
+        User(username="approver", password=hash_password("approver123"), role_id=role_map["Approver"], status="ACTIVE"),
+        User(username="viewer", password=hash_password("viewer123"), role_id=role_map["Viewer"], status="ACTIVE"),
     ]
     db.add_all(users)
     db.commit()

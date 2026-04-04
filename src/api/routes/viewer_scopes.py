@@ -11,7 +11,7 @@ from src.services.viewer_scope_service import ViewerScopeService
 router = APIRouter()
 
 
-@router.post("", response_model=ViewerScopeResponse)
+@router.post("", response_model=ViewerScopeResponse, status_code=201)
 def grant_scope(payload: ViewerScopeCreate, db: Session = Depends(get_db), current_user=Depends(require_roles(RoleName.ADMIN))):
     scope = ViewerScopeService(db).grant_scope(
         payload.viewer_user_id,

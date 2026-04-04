@@ -22,7 +22,7 @@ def _to_response(flag):
     }
 
 
-@router.post("", response_model=FlagResponse)
+@router.post("", response_model=FlagResponse, status_code=201)
 def create_flag(payload: FlagCreate, db: Session = Depends(get_db), current_user=Depends(require_roles(RoleName.ANALYST))):
     flag = FlagService(db).create_flag(payload.transaction_id, payload.reason, current_user.id)
     return _to_response(flag)

@@ -32,3 +32,8 @@ class ScopeType(str, Enum):
 class FlagStatus(str, Enum):
     OPEN = "OPEN"
     RESOLVED = "RESOLVED"
+
+
+class TransactionType(str, Enum):
+    CREDIT = "Credit"
+    DEBIT = "Debit"
