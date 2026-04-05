@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zorvyn API Demo</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <div>
+                <p class="eyebrow">Zorvyn Finance</p>
+                <h1>Minimal frontend for backend API demos</h1>
+                <p class="subtle">
+                    Log in, trigger the main API flows, and inspect request and response payloads in one place.
+                </p>
+            </div>
+            <div class="hero-actions">
+                <a href="/docs" target="_blank" rel="noreferrer">Open Swagger</a>
+                <a href="/redoc" target="_blank" rel="noreferrer">Open ReDoc</a>
+            </div>
+        </section>
+
+        <section class="grid">
+            <article class="card">
+                <div class="card-head">
+                    <h2>Connection</h2>
+                    <span id="health-badge" class="badge muted">Not checked</span>
+                </div>
+                <label>
+                    API base URL
+                    <input id="base-url" type="text" value="">
+                </label>
+                <button id="health-btn" type="button">Check health</button>
+                <p class="hint">Default is the same origin serving this page.</p>
+            </article>
+
+            <article class="card">
+                <div class="card-head">
+                    <h2>Authentication</h2>
+                    <span id="auth-badge" class="badge muted">Signed out</span>
+                </div>
+                <form id="login-form" class="stack">
+                    <label>
+                        Username
+                        <input id="username" type="text" value="admin" required>
+                    </label>
+                    <label>
+                        Password
+                        <input id="password" type="password" value="admin123" required>
+                    </label>
+                    <div class="actions">
+                        <button type="submit">Login</button>
+                        <button id="logout-btn" type="button" class="secondary">Logout</button>
+                    </div>
+                </form>
+                <div class="mini-grid">
+                    <div>
+                        <span class="label">Role</span>
+                        <strong id="current-role">-</strong>
+                    </div>
+                    <div>
+                        <span class="label">User</span>
+                        <strong id="current-user">-</strong>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section class="grid">
+            <article class="card">
+                <div class="card-head">
+                    <h2>Quick Reads</h2>
+                    <span class="badge">GET</span>
+                </div>
+                <div class="stack">
+                    <button type="button" data-endpoint="/auth/me">Get current user</button>
+                    <button type="button" data-endpoint="/dashboard/summary">Get dashboard summary</button>
+                    <button type="button" data-endpoint="/dashboard/category-totals">Get category totals</button>
+                    <button type="button" data-endpoint="/transactions?page=1&page_size=10">List transactions</button>
+                    <button type="button" data-endpoint="/change-requests/mine">My change requests</button>
+                    <button type="button" data-endpoint="/change-requests/pending">Pending change requests</button>
+                    <button type="button" data-endpoint="/flags">List flags</button>
+                    <button type="button" data-endpoint="/audit-logs">Audit logs</button>
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="card-head">
+                    <h2>Create Transaction</h2>
+                    <span class="badge">POST</span>
+                </div>
+                <form id="transaction-form" class="stack">
+                    <label>
+                        Transaction ID
+                        <input id="tx-transaction-id" type="text" value="TX-DEMO-001" required>
+                    </label>
+                    <label>
+                        Occurred At
+                        <input id="tx-occurred-at" type="datetime-local" required>
+                    </label>
+                    <label>
+                        Account Number
+                        <input id="tx-account-number" type="text" value="ACC-DEMO-100" required>
+                    </label>
+                    <label>
+                        Type
+                        <select id="tx-type">
+                            <option value="Credit">Credit</option>
+                            <option value="Debit">Debit</option>
+                        </select>
+                    </label>
+                    <label>
+                        Amount
+                        <input id="tx-amount" type="number" step="0.01" value="250.00" required>
+                    </label>
+                    <label>
+                        Currency
+                        <input id="tx-currency" type="text" value="USD" required>
+                    </label>
+                    <label>
+                        Counterparty
+                        <input id="tx-counterparty" type="text" value="Acme Corp" required>
+                    </label>
+                    <label>
+                        Category
+                        <input id="tx-category" type="text" value="Sales" required>
+                    </label>
+                    <label>
+                        Payment Method
+                        <input id="tx-payment-method" type="text" value="Card" required>
+                    </label>
+                    <label>
+                        Notes
+                        <textarea id="tx-notes" rows="3">Created from the minimal demo frontend</textarea>
+                    </label>
+                    <button type="submit">Create transaction</button>
+                </form>
+            </article>
+
+            <article class="card">
+                <div class="card-head">
+                    <h2>Submit Update Request</h2>
+                    <span class="badge">POST</span>
+                </div>
+                <form id="change-request-form" class="stack">
+                    <label>
+                        Transaction numeric ID
+                        <input id="cr-transaction-id" type="number" min="1" placeholder="1" required>
+                    </label>
+                    <label>
+                        Reason
+                        <input id="cr-reason" type="text" value="Normalize category from demo frontend" required>
+                    </label>
+                    <label>
+                        Proposed changes JSON
+                        <textarea id="cr-payload" rows="6" required>{
+  "category": "Reconciled",
+  "notes": "Updated from the demo frontend"
+}</textarea>
+                    </label>
+                    <button type="submit">Submit change request</button>
+                </form>
+            </article>
+        </section>
+
+        <section class="card console">
+            <div class="card-head">
+                <h2>API Console</h2>
+                <button id="clear-console-btn" type="button" class="secondary">Clear</button>
+            </div>
+            <div class="console-grid">
+                <div>
+                    <span class="label">Last request</span>
+                    <pre id="request-output">No request yet.</pre>
+                </div>
+                <div>
+                    <span class="label">Last response</span>
+                    <pre id="response-output">No response yet.</pre>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

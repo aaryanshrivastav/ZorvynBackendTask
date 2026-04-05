@@ -287,6 +287,30 @@ Transaction mutation endpoints:
 - `PUT /transactions/{transaction_id}` (Admin only): direct update for operational fixes.
 - `DELETE /transactions/{transaction_id}` (Admin only): direct soft delete.
 
+## Minimal Frontend
+
+The backend now serves a lightweight demo frontend at:
+
+- `/`
+
+What it includes:
+
+- login form for JWT auth
+- one-click API calls for health, current user, dashboard, transactions, flags, change requests, and audit logs
+- small forms to create a transaction and submit an update change request
+- built-in request/response console so evaluators can see payloads without opening devtools
+
+How to use it:
+
+1. Start the backend with `python scripts/run.py`
+2. Open `http://localhost:8000/`
+3. Log in with a valid local user such as `admin` / `admin123`
+
+Integration note:
+
+- The frontend is served directly by FastAPI and calls the backend through the same app by default.
+- CORS is also enabled for local/demo use in case you want to host the frontend separately later.
+
 ## Sample API Payloads
 
 ### 1) Login
