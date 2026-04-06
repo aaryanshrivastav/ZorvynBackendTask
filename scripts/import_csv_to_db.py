@@ -1,9 +1,14 @@
 import csv
+import sys
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
 from sqlalchemy.orm import Session
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.db.init_db import create_tables, seed_roles
 from src.db.session import SessionLocal
@@ -13,7 +18,7 @@ from src.models.transaction_risk_profile import TransactionRiskProfile
 from src.models.user import User
 from src.repositories.role_repository import RoleRepository
 
-CSV_PATH = Path("accounting_dataset.csv")
+CSV_PATH = PROJECT_ROOT / "accounting_dataset.csv"
 
 
 def none_to_null(value: str | None):

@@ -197,6 +197,17 @@ pip install -r requirements.txt
 python scripts/init_db.py
 ```
 
+This creates the four demo login users used for testing:
+
+| Role | Username | Password |
+|---|---|---|
+| Admin | `admin` | `admin123` |
+| Analyst | `analyst` | `analyst123` |
+| Approver | `approver` | `approver123` |
+| Viewer | `viewer` | `viewer123` |
+
+If you want the CSV-backed demo accounts too, run the import step next. That creates `dataset_<user_id>` users with password `changeme`.
+
 4. Import CSV:
 
 ```bash
@@ -258,6 +269,28 @@ python scripts/init_db.py
 python scripts/import_csv_to_db.py
 python scripts/run.py
 ```
+
+Demo role test checklist:
+
+1. Start the server with `python scripts/run.py`.
+2. Log in with each account below against `POST /auth/login`.
+3. Confirm the returned access token works with `GET /auth/me`.
+
+Role logins to test:
+
+| Role | Username | Password |
+|---|---|---|
+| Admin | `admin` | `admin123` |
+| Analyst | `analyst` | `analyst123` |
+| Approver | `approver` | `approver123` |
+| Viewer | `viewer` | `viewer123` |
+
+Expected role checks after login:
+
+- Admin: user management, viewer scopes, full visibility, direct transaction fix endpoints.
+- Analyst: transaction creation, flags, and change-request submission.
+- Approver: review and approve/reject pending requests and flags.
+- Viewer: read-only access within assigned scope.
 
 Coverage includes:
 

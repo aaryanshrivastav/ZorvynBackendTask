@@ -11,6 +11,14 @@ const elements = {
     authBadge: document.getElementById("auth-badge"),
     currentRole: document.getElementById("current-role"),
     currentUser: document.getElementById("current-user"),
+    transactionCard: document.getElementById("transaction-form").closest(".card"),
+    changeRequestCard: document.getElementById("change-request-form").closest(".card"),
+    transactionLock: document.getElementById("transaction-lock"),
+    changeRequestLock: document.getElementById("change-request-lock"),
+    transactionFieldset: document.getElementById("transaction-fieldset"),
+    changeRequestFieldset: document.getElementById("change-request-fieldset"),
+    transactionStatus: document.getElementById("transaction-status"),
+    changeRequestStatus: document.getElementById("change-request-status"),
     requestOutput: document.getElementById("request-output"),
     responseOutput: document.getElementById("response-output"),
 };
@@ -35,6 +43,23 @@ function updateAuthSummary() {
     elements.authBadge.className = `badge ${isSignedIn ? "" : "muted"}`.trim();
     elements.currentRole.textContent = state.currentUser?.role ?? "-";
     elements.currentUser.textContent = state.currentUser?.username ?? "-";
+    elements.currentRole.classList.toggle("role-hidden", !isSignedIn);
+    elements.currentUser.classList.toggle("role-hidden", !isSignedIn);
+    updateWriteAccessState(isSignedIn);
+}
+
+function setActionStatus(element, message, visible) {
+    element.textContent = message;
+    element.classList.toggle("hidden", !visible);
+}
+
+function updateWriteAccessState(isSignedIn) {
+    elements.transactionCard.classList.toggle("soft-locked", !isSignedIn);
+    elements.changeRequestCard.classList.toggle("soft-locked", !isSignedIn);
+    elements.transactionFieldset.disabled = !isSignedIn;
+    elements.changeRequestFieldset.disabled = !isSignedIn;
+    elements.transactionLock.textContent = isSignedIn ? "Write access ready." : "Login required to use this action.";
+    elements.changeRequestLock.textContent = isSignedIn ? "Write access ready." : "Login required to use this action.";
 }
 
 function setHealthStatus(ok, label) {
@@ -87,7 +112,10 @@ async function apiCall(path, options = {}) {
     });
 
     if (!response.ok) {
-        throw new Error(typeof payload === "string" ? payload : payload?.detail || "Request failed");
+        const message = typeof payload === "string" ? payload : payload?.detail || "Request failed";
+        const error = new Error(message);
+        error.status = response.status;
+        throw error;
     }
 
     return payload;
@@ -147,39 +175,53 @@ async function handleLogout() {
 
 async function handleCreateTransaction(event) {
     event.preventDefault();
-    const occurredAt = document.getElementById("tx-occurred-at").value;
-    const body = {
-        transaction_id: document.getElementById("tx-transaction-id").value.trim(),
-        occurred_at: new Date(occurredAt).toISOString(),
-        account_number: document.getElementById("tx-account-number").value.trim(),
-        transaction_type: document.getElementById("tx-type").value,
-        amount: document.getElementById("tx-amount").value,
-        currency: document.getElementById("tx-currency").value.trim(),
-        counterparty: document.getElementById("tx-counterparty").value.trim(),
-        category: document.getElementById("tx-category").value.trim(),
-        payment_method: document.getElementById("tx-payment-method").value.trim(),
-        notes: document.getElementById("tx-notes").value.trim(),
-    };
+    setActionStatus(elements.transactionStatus, "", false);
+    try {
+        const occurredAt = document.getElementById("tx-occurred-at").value;
+        const body = {
+            transaction_id: document.getElementById("tx-transaction-id").value.trim(),
+            occurred_at: new Date(occurredAt).toISOString(),
+            account_number: document.getElementById("tx-account-number").value.trim(),
+            transaction_type: document.getElementById("tx-type").value,
+            amount: document.getElementById("tx-amount").value,
+            currency: document.getElementById("tx-currency").value.trim(),
+            counterparty: document.getElementById("tx-counterparty").value.trim(),
+            category: document.getElementById("tx-category").value.trim(),
+            payment_method: document.getElementById("tx-payment-method").value.trim(),
+            notes: document.getElementById("tx-notes").value.trim(),
+        };
 
-    const created = await apiCall("/transactions", {
-        method: "POST",
-        body: JSON.stringify(body),
-    });
+        const created = await apiCall("/transactions", {
+            method: "POST",
+            body: JSON.stringify(body),
+        });
 
-    document.getElementById("cr-transaction-id").value = created.id;
+        document.getElementById("cr-transaction-id").value = created.id;
+    } catch (error) {
+        if (!showDeniedStatus(elements.transactionStatus, error)) {
+            setActionStatus(elements.transactionStatus, error.message, true);
+        }
+    }
 }
 
 async function handleCreateChangeRequest(event) {
     event.preventDefault();
-    const proposedChanges = JSON.parse(document.getElementById("cr-payload").value);
-    await apiCall("/change-requests/update", {
-        method: "POST",
-        body: JSON.stringify({
-            transaction_id: Number(document.getElementById("cr-transaction-id").value),
-            reason: document.getElementById("cr-reason").value.trim(),
-            proposed_changes: proposedChanges,
-        }),
-    });
+    setActionStatus(elements.changeRequestStatus, "", false);
+    try {
+        const proposedChanges = JSON.parse(document.getElementById("cr-payload").value);
+        await apiCall("/change-requests/update", {
+            method: "POST",
+            body: JSON.stringify({
+                transaction_id: Number(document.getElementById("cr-transaction-id").value),
+                reason: document.getElementById("cr-reason").value.trim(),
+                proposed_changes: proposedChanges,
+            }),
+        });
+    } catch (error) {
+        if (!showDeniedStatus(elements.changeRequestStatus, error)) {
+            setActionStatus(elements.changeRequestStatus, error.message, true);
+        }
+    }
 }
 
 function bindQuickReadButtons() {
@@ -207,6 +249,15 @@ function bindEvents() {
         elements.responseOutput.textContent = "No response yet.";
     });
     bindQuickReadButtons();
+}
+
+function showDeniedStatus(target, error) {
+    if (error?.status === 401 || error?.status === 403) {
+        setActionStatus(target, "NOT ALLOWED", true);
+        return true;
+    }
+
+    return false;
 }
 
 function init() {

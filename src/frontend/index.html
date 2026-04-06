@@ -91,7 +91,9 @@
                     <h2>Create Transaction</h2>
                     <span class="badge">POST</span>
                 </div>
+                <div id="transaction-lock" class="lock-banner">Login required to use this action.</div>
                 <form id="transaction-form" class="stack">
+                    <fieldset id="transaction-fieldset">
                     <label>
                         Transaction ID
                         <input id="tx-transaction-id" type="text" value="TX-DEMO-001" required>
@@ -136,7 +138,9 @@
                         <textarea id="tx-notes" rows="3">Created from the minimal demo frontend</textarea>
                     </label>
                     <button type="submit">Create transaction</button>
+                    </fieldset>
                 </form>
+                <div id="transaction-status" class="action-status hidden"></div>
             </article>
 
             <article class="card">
@@ -144,7 +148,9 @@
                     <h2>Submit Update Request</h2>
                     <span class="badge">POST</span>
                 </div>
+                <div id="change-request-lock" class="lock-banner">Login required to use this action.</div>
                 <form id="change-request-form" class="stack">
+                    <fieldset id="change-request-fieldset">
                     <label>
                         Transaction numeric ID
                         <input id="cr-transaction-id" type="number" min="1" placeholder="1" required>
@@ -161,7 +167,9 @@
 }</textarea>
                     </label>
                     <button type="submit">Submit change request</button>
+                    </fieldset>
                 </form>
+                <div id="change-request-status" class="action-status hidden"></div>
             </article>
         </section>
 

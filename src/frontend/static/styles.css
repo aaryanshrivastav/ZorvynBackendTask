@@ -145,6 +145,59 @@ button.secondary {
     color: var(--danger);
 }
 
+.lock-banner,
+.action-status {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    font-size: 0.9rem;
+}
+
+.lock-banner {
+    background: #f3ede1;
+    border-color: #d9cab0;
+    color: var(--muted);
+}
+
+.action-status {
+    background: #f8e2dd;
+    border-color: #d98a7d;
+    color: #8d3f2f;
+    font-weight: 600;
+}
+
+.action-status.hidden {
+    display: none;
+}
+
+.soft-locked fieldset {
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.soft-locked input,
+.soft-locked select,
+.soft-locked textarea,
+.soft-locked button[type="submit"] {
+    opacity: 0.55;
+}
+
+.soft-locked input,
+.soft-locked select,
+.soft-locked textarea {
+    pointer-events: none;
+}
+
+.soft-locked button[type="submit"] {
+    cursor: not-allowed;
+}
+
+.role-hidden {
+    visibility: hidden;
+}
+
 .stack {
     display: grid;
     gap: 12px;
